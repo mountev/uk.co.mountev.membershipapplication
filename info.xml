@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <extension key="uk.co.mountev.membershipapplication" type="module">
   <file>membershipapplication</file>
-  <name>FIXME</name>
-  <description>FIXME</description>
+  <name>Membership Application</name>
+  <description>Membership Application - Rule Actions, Membership Updates and Overrides</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>Deepak Srivastava</author>
-    <email>deepak.srivastava.0303@gmail.com</email>
+    <email>deepak@mountev.co.uk</email>
   </maintainer>
   <urls>
     <url desc="Main Extension Page">http://FIXME</url>
@@ -16,11 +16,10 @@
   </urls>
   <releaseDate>2020-06-10</releaseDate>
   <version>1.0</version>
-  <develStage>alpha</develStage>
+  <develStage>stable</develStage>
   <compatibility>
     <ver>5.0</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
   <classloader>
     <psr4 prefix="Civi\" path="Civi"/>
   </classloader>

@@ -169,10 +169,21 @@ function membershipapplication_civicrm_navigationMenu(&$menu) {
   _membershipapplication_civix_navigationMenu($menu);
 } // */
 
+function membershipapplication_civicrm_pre($op, $objectName, $objectId, &$objectRef) {
+  if ($objectName == 'Membership' && $op == 'edit' && $objectId) {
+    $oldMemStatusId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $objectId, 'status_id');
+    // For any updates where status is going to be New / Awaiting Approval, always override
+    // E.g: for online payments, where there is a change from Pending to New
+    if ($oldMemStatusId == 5 && $objectRef['status_id'] == 1) {
+      $objectRef['is_override'] = 1;
+    }
+  }
+}
+
 function membershipapplication_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   if ($objectName == 'Membership' && $op == 'create' && $objectId) {
-    // fixme: use config
-    if (in_array($objectRef->membership_type_id, [1,2,3,4]) && $objectRef->status_id == 1) {
+    // When a mem of status New is created, always set to override.
+    if ($objectRef->status_id == 1) {
       // this shouldn't trigger any hooks
       CRM_Core_DAO::setFieldValue('CRM_Member_DAO_Membership', $objectId, 'is_override', 1);
     }

@@ -20,13 +20,21 @@ class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_Civ
     ];
     $this->addRadio('is_override', ts('Override Flag'), $options, ['allowClear' => TRUE], NULL, TRUE);
 
-    $options = ['' => ts('-- please select --')] + CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label');
+    $options = ['' => ts('-- AUTO --')] + CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label');
     $this->add('select', 'membership_status_to', ts('Change Membership Status To'), $options);
 
-    $this->add('select', 'membership_type_tags', ts('Tag to Apply'), CRM_Core_BAO_Tag::getTags());
+    $sql = "select id, label from civicrm_custom_field where data_type = 'Date' and is_active = 1 and label like '%end%'";
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    $endDateFields = [];
+    while ($dao->fetch()) {
+      $endDateFields[$dao->id] = $dao->label;
+    }
+    $this->add('select', 'is_course_end_date', ts('Set End Date to Course End Date?'), ['' => ts('-- DEFAULT --')] + $endDateFields);
+
+    $this->add('select', 'membership_type_tags', ts('Tag to Apply'), ['' => ts('-- please select --')] + CRM_Core_BAO_Tag::getTags());
 
     $attributes['placeholder'] = ts('Membership Types to Tag');
-    $this->add('select', 'tag_membership_type_ids', ts('Tag Membership Type Condition'), $membershipTypes, FALSE, $attributes);
+    $this->add('select', 'tag_membership_type_ids', ts('When Membership Type Is One Of'), $membershipTypes, FALSE, $attributes);
 
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
@@ -46,15 +54,33 @@ class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_Civ
   public function setDefaultValues() {
     $defaultValues = parent::setDefaultValues();
     $data = unserialize($this->ruleAction->action_params);
-    if (!empty($data['membership_type_id'])) {
-      $defaultValues['membership_type_id'] = $data['membership_type_id'];
+    foreach ([
+      'membership_type_ids', 
+      'is_override', 
+      'membership_status_to', 
+      'membership_type_tags', 
+      'is_course_end_date',
+      'tag_membership_type_ids'] as $field
+    ) {
+      if (isset($data[$field])) {
+        $defaultValues[$field] = $data[$field];
+      }
     }
     return $defaultValues;
   }
 
   public function postProcess() {
     $data = [];
-    $data['membership_type_id'] = $this->_submitValues['membership_type_id'];
+    foreach ([
+      'membership_type_ids', 
+      'is_override', 
+      'membership_status_to', 
+      'membership_type_tags', 
+      'is_course_end_date',
+      'tag_membership_type_ids'] as $field
+    ) {
+      $data[$field] = $this->_submitValues[$field];
+    }
     $this->ruleAction->action_params = serialize($data);
     $this->ruleAction->save();
     parent::postProcess();

@@ -189,3 +189,22 @@ function membershipapplication_civicrm_post($op, $objectName, $objectId, &$objec
     }
   }
 }
+
+function membershipapplication_civicrm_alterCalculatedMembershipStatus(&$membershipDetails, $arguments, $membership) {
+  // if status was calculated as New, because join date matched with today
+  // set it to Current instead
+  if (!empty($membershipDetails) && $membershipDetails['name'] == 'New') {
+    if (empty($membership['is_override']) &&
+      $arguments['status_date'] == $arguments['join_date'] &&
+      $arguments['status_date'] <= $arguments['end_date']
+    ) {
+      // name based list
+      $membershipStatuses = CRM_Member_PseudoConstant::membershipStatus();
+      $membershipStatuses = array_flip($membershipStatuses);
+      if (!empty($membershipStatuses['Current'])) {
+        $membershipDetails['id'] = $membershipStatuses['Current'];
+        $membershipDetails['name'] = 'Current';
+      }
+    }
+  }
+}

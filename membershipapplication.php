@@ -191,16 +191,26 @@ function membershipapplication_civicrm_post($op, $objectName, $objectId, &$objec
 }
 
 function membershipapplication_civicrm_alterCalculatedMembershipStatus(&$membershipDetails, $arguments, $membership) {
-  // if status was calculated as New, because join date matched with today
-  // set it to Current instead
-  if (!empty($membershipDetails) && $membershipDetails['name'] == 'New') {
-    if (empty($membership['is_override']) &&
-      $arguments['status_date'] == $arguments['join_date'] &&
-      $arguments['status_date'] <= $arguments['end_date']
-    ) {
-      // name based list
-      $membershipStatuses = CRM_Member_PseudoConstant::membershipStatus();
-      $membershipStatuses = array_flip($membershipStatuses);
+  // name based list
+  $membershipStatuses = CRM_Member_PseudoConstant::membershipStatus();
+  $membershipStatuses = array_flip($membershipStatuses);
+  if (empty($membership['id']) && empty($membership['is_override'])) {
+    // If a new membership is created (may be from backend) - irrespective of dates, 
+    // always try to set it to New. Override would automatically apply through post hook.
+    $membershipDetails['id'] = $membershipStatuses['New'];
+    $membershipDetails['name'] = 'New';
+  } else if (!empty($membership['id']) && empty($membership['is_override'])) {
+    // It's a membership update/renew without override.
+    //
+    // If status was calculated as New, 
+    // - because join date matched with today. Due to start and end event config of NEW status rule
+    // - or some other reason - we don't care
+    // SET it to current instead.
+    //
+    // NOTE: $membershipDetails remains empty for online signup because it gets created as New 
+    //       but pending without since date. And then updates to completed. And then hardcodedly
+    //       changed to New by bao contribution file. Which is fine for us.
+    if (!empty($membershipDetails) && $membershipDetails['name'] == 'New') {
       if (!empty($membershipStatuses['Current'])) {
         $membershipDetails['id'] = $membershipStatuses['Current'];
         $membershipDetails['name'] = 'Current';

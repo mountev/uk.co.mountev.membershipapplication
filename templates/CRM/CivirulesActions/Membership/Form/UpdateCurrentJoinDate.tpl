@@ -25,6 +25,11 @@
   <div class="clear"></div>
 </div>
 <div class="crm-section">
+  <div class="label">{$form.is_set_since_date_today.label}</div>
+  <div class="content">{$form.is_set_since_date_today.html}</div>
+  <div class="clear"></div>
+</div>
+<div class="crm-section">
   <div class="label">{$form.membership_type_tags.label}</div>
   <div class="content">{$form.membership_type_tags.html}&nbsp;&nbsp;{$form.tag_membership_type_ids.label}&nbsp;&nbsp;{$form.tag_membership_type_ids.html}</div>
   <div class="clear"></div>

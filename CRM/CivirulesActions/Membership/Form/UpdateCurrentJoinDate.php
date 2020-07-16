@@ -11,17 +11,17 @@ class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_Civ
   public function buildQuickForm() {
     $this->add('hidden', 'rule_action_id');
     $membershipTypes = CRM_Member_PseudoConstant::membershipType();
-    $attributes = ['multiple' => 'multiple', 'class' => 'crm-select2 huge', 'placeholder' => ts('Membership Types')];
-    $this->add('select', 'membership_type_ids', ts('Membership Type to Action On'), $membershipTypes, TRUE, $attributes);
+    $attributes = ['multiple' => 'multiple', 'class' => 'crm-select2 huge', 'placeholder' => E::ts('Membership Types')];
+    $this->add('select', 'membership_type_ids', E::ts('Membership Type to Action On'), $membershipTypes, TRUE, $attributes);
 
     $options = [
-      1 => ts('Set'),
-      0 => ts('Remove'),
+      1 => E::ts('Set'),
+      0 => E::ts('Remove'),
     ];
-    $this->addRadio('is_override', ts('Override Flag'), $options, ['allowClear' => TRUE], NULL, TRUE);
+    $this->addRadio('is_override', E::ts('Override Flag'), $options, ['allowClear' => TRUE], NULL, TRUE);
 
-    $options = ['' => ts('-- AUTO --')] + CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label');
-    $this->add('select', 'membership_status_to', ts('Change Membership Status To'), $options);
+    $options = ['' => E::ts('-- AUTO --')] + CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label');
+    $this->add('select', 'membership_status_to', E::ts('Change Membership Status To'), $options);
 
     $sql = "select id, label from civicrm_custom_field where data_type = 'Date' and is_active = 1 and label like '%end%'";
     $dao = CRM_Core_DAO::executeQuery($sql);
@@ -29,18 +29,20 @@ class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_Civ
     while ($dao->fetch()) {
       $endDateFields[$dao->id] = $dao->label;
     }
-    $this->add('select', 'is_course_end_date', ts('Set End Date to Course End Date?'), ['' => ts('-- DEFAULT --')] + $endDateFields);
+    $this->add('select', 'is_course_end_date', E::ts('Set End Date to Course End Date?'), ['' => E::ts('-- DEFAULT --')] + $endDateFields);
 
-    $this->add('select', 'membership_type_tags', ts('Tag to Apply'), ['' => ts('-- please select --')] + CRM_Core_BAO_Tag::getTags());
+    $this->addElement('checkbox', 'is_set_since_date_today', E::ts('Set Since Date to Today (When Action is Triggerd)?'));
 
-    $attributes['placeholder'] = ts('Membership Types to Tag');
-    $this->add('select', 'tag_membership_type_ids', ts('When Membership Type Is One Of'), $membershipTypes, FALSE, $attributes);
+    $this->add('select', 'membership_type_tags', E::ts('Tag to Apply'), ['' => E::ts('-- please select --')] + CRM_Core_BAO_Tag::getTags());
+
+    $attributes['placeholder'] = E::ts('Membership Types to Tag');
+    $this->add('select', 'tag_membership_type_ids', E::ts('When Membership Type Is One Of'), $membershipTypes, FALSE, $attributes);
 
     $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Save'), 'isDefault' => TRUE,),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+      array('type' => 'next', 'name' => E::ts('Save'), 'isDefault' => TRUE,),
+      array('type' => 'cancel', 'name' => E::ts('Cancel'))));
 
-    // export form elements
+    // export form elemenE::ts
     $this->assign('elementNames', $this->getRenderableElementNames());
     parent::buildQuickForm();
   }
@@ -60,6 +62,7 @@ class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_Civ
       'membership_status_to', 
       'membership_type_tags', 
       'is_course_end_date',
+      'is_set_since_date_today',
       'tag_membership_type_ids'] as $field
     ) {
       if (isset($data[$field])) {
@@ -77,9 +80,10 @@ class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_Civ
       'membership_status_to', 
       'membership_type_tags', 
       'is_course_end_date',
+      'is_set_since_date_today',
       'tag_membership_type_ids'] as $field
     ) {
-      $data[$field] = $this->_submitValues[$field];
+      $data[$field] = CRM_Utils_Array::value($field, $this->_submitValues);
     }
     $this->ruleAction->action_params = serialize($data);
     $this->ruleAction->save();

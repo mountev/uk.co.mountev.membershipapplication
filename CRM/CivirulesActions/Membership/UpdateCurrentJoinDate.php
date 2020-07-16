@@ -54,6 +54,10 @@ class CRM_CivirulesActions_Membership_UpdateCurrentJoinDate extends CRM_Civirule
       $label  = ts('Set End Date to Course End Date') . ': ' . ts('Yes');
       $labels[] = $label;
     }
+    if (!empty($params['is_set_since_date_today'])) {
+      $label  = ts('Set Since Date to Today (When Action is Triggerd)?') . ': ' . ts('Yes');
+      $labels[] = $label;
+    }
     if (!empty($params['membership_type_tags']) || !empty($params['tag_membership_type_ids'])) {
       $tags   = CRM_Core_BAO_Tag::getTags();
       $label  = ts('Tags to Apply') . ': ';
@@ -87,7 +91,7 @@ class CRM_CivirulesActions_Membership_UpdateCurrentJoinDate extends CRM_Civirule
         'sequential' => 1,
         'contact_id' => $contactId,
         'membership_type_id' => $memTypeId,
-        'status_id' => "New",//fixme: setting
+        'status_id' => "New",
       ]);
       if (!empty($getResult['id'])) {
         // dates based on today
@@ -98,6 +102,9 @@ class CRM_CivirulesActions_Membership_UpdateCurrentJoinDate extends CRM_Civirule
           if (!empty($memTypeDates[$dateParam])) {
             $$dateParam = CRM_Utils_Date::processDate($memTypeDates[$dateParam], NULL, FALSE, 'Y-m-d');
           }
+        }
+        if (!empty($actionParams['is_set_since_date_today'])) {
+          $join_date = date('Y-m-d');
         }
         $params = [];
         if (empty($actionParams['is_override'])) {
@@ -132,7 +139,9 @@ class CRM_CivirulesActions_Membership_UpdateCurrentJoinDate extends CRM_Civirule
           }
         }
         if (!empty($params)) {
+          CRM_Core_Error::debug_var('civirule membership update params', $params);
           $updateResult = civicrm_api3('Membership', 'create', $params);
+          CRM_Core_Error::debug_var('civirule membership update result', $updateResult);
         }
 
         if (in_array($memTypeId, $actionParams['tag_membership_type_ids']) && 

@@ -2,8 +2,8 @@
 <menu>
   <item>
     <path>civicrm/civirule/form/action/membership/updatecurrentjoindate</path>
-    <page_callback>CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate</page_callback>
-    <title>UpdateCurrentJoinDate</title>
+    <page_callback>CRM_CivirulesActions_Membership_Form_UpdateMembership</page_callback>
+    <title>UpdateMembership</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
 </menu>

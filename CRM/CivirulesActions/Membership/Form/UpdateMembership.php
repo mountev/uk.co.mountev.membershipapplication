@@ -7,7 +7,7 @@ use CRM_Membershipapplication_ExtensionUtil as E;
  *
  * @see https://docs.civicrm.org/dev/en/latest/framework/quickform/
  */
-class CRM_CivirulesActions_Membership_Form_UpdateCurrentJoinDate extends CRM_CivirulesActions_Form_Form {
+class CRM_CivirulesActions_Membership_Form_UpdateMembership extends CRM_CivirulesActions_Form_Form {
   public function buildQuickForm() {
     $this->add('hidden', 'rule_action_id');
     $membershipTypes = CRM_Member_PseudoConstant::membershipType();

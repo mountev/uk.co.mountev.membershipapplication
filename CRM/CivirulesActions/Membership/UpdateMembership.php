@@ -1,6 +1,6 @@
 <?php
 
-class CRM_CivirulesActions_Membership_UpdateCurrentJoinDate extends CRM_Civirules_Action {
+class CRM_CivirulesActions_Membership_UpdateMembership extends CRM_Civirules_Action {
 
   /**
    * Method to return the url for additional form processing for action

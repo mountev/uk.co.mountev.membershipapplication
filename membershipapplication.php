@@ -171,19 +171,31 @@ function membershipapplication_civicrm_navigationMenu(&$menu) {
 
 function membershipapplication_civicrm_pre($op, $objectName, $objectId, &$objectRef) {
   if ($objectName == 'Membership' && $op == 'edit' && $objectId) {
+    $membershipStatuses = CRM_Member_PseudoConstant::membershipStatus();
+    $membershipStatuses = array_flip($membershipStatuses);
     $oldMemStatusId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $objectId, 'status_id');
     // For any updates where status is going to be New / Awaiting Approval, always override
     // E.g: for online payments, where there is a change from Pending to New
-    if ($oldMemStatusId == 5 && $objectRef['status_id'] == 1) {
+    if ($oldMemStatusId == $membershipStatuses['Pending'] && $objectRef['status_id'] == $membershipStatuses['New']) {
       $objectRef['is_override'] = 1;
+    } else if ($oldMemStatusId == $membershipStatuses['New'] && $objectRef['status_id'] == $membershipStatuses['New']) {
+      $path = CRM_Utils_System::currentPath();
+      if ($path == 'civicrm/contact/view/contribution') {
+        // If new to new change is due to related contribution update
+        // This happens when backend contribution is updated from pending to completed, the related 
+        // membership gets updated to new using dao->save() (no hooks called) and then actual save thru hook.
+        $objectRef['is_override'] = 1;
+      }
     }
   }
 }
 
 function membershipapplication_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   if ($objectName == 'Membership' && $op == 'create' && $objectId) {
+    $membershipStatuses = CRM_Member_PseudoConstant::membershipStatus();
+    $membershipStatuses = array_flip($membershipStatuses);
     // When a mem of status New is created, always set to override.
-    if ($objectRef->status_id == 1) {
+    if ($objectRef->status_id == $membershipStatuses['New']) {
       // this shouldn't trigger any hooks
       CRM_Core_DAO::setFieldValue('CRM_Member_DAO_Membership', $objectId, 'is_override', 1);
     }
@@ -199,22 +211,46 @@ function membershipapplication_civicrm_alterCalculatedMembershipStatus(&$members
     // always try to set it to New. Override would automatically apply through post hook.
     $membershipDetails['id'] = $membershipStatuses['New'];
     $membershipDetails['name'] = 'New';
-  } else if (!empty($membership['id']) && empty($membership['is_override'])) {
-    // It's a membership update/renew without override.
-    //
-    // If status was calculated as New, 
-    // - because join date matched with today. Due to start and end event config of NEW status rule
-    // - or some other reason - we don't care
-    // SET it to current instead.
-    //
-    // NOTE: $membershipDetails remains empty for online signup because it gets created as New 
-    //       but pending without since date. And then updates to completed. And then hardcodedly
-    //       changed to New by bao contribution file. Which is fine for us.
-    if (!empty($membershipDetails) && $membershipDetails['name'] == 'New') {
+  } else if (!empty($membership['id']) &&
+    empty($membership['is_override']) &&
+    !empty($membershipDetails) &&
+    empty(\Civi::$statics[E::SHORT_NAME]['status_calculated'][$membership['id']])
+  ) {
+    // If it's a membership update where override is not set
+    if ($membershipDetails['name'] != 'New' &&
+      ($membership['status_id'] == $membershipStatuses['Pending'])
+    ) {
+      // If membership is going to get a new status from Pending,
+      // Set it to New, so it goes through approval workflow.
+      $membershipDetails['id']   = $membershipStatuses['New'];
+      $membershipDetails['name'] = 'New';
+      // set override flag so it stays "Awaiting Approval / New", unless approved.
+      //$membership['is_override'] = 1;
+      //CRM_Core_DAO::setFieldValue('CRM_Member_DAO_Membership', $membership['id'], 'is_override', 1);
+    } else if ($membershipDetails['name'] == 'New' &&
+      ($membership['status_id'] != $membershipStatuses['Pending'])
+    ) {
+      // It's a membership update/renew without override (Approval workflow).
+      //
+      // If status was calculated as New,
+      // - because join date matched with today. Due to start and end event config of NEW status rule
+      // - or some other reason - we don't care
+      // SET it to current instead.
+      //
+      // NOTE: $membershipDetails remains empty for online signup because it gets created as New 
+      //       but pending without since date. And then updates to completed. And then hardcodedly
+      //       changed to New by bao contribution file. Which is fine for us.
       if (!empty($membershipStatuses['Current'])) {
         $membershipDetails['id'] = $membershipStatuses['Current'];
         $membershipDetails['name'] = 'Current';
       }
+    } else if ($membershipDetails['name'] == 'New' &&
+      ($membership['status_id'] == $membershipStatuses['Pending'])
+    ) {
+      // record it in static var, so we don't change it to current if hook is called again in the same
+      // request. 
+      // Test case: create a membership with pending contribution from backend and then complete the payment.
+      \Civi::$statics[E::SHORT_NAME]['status_calculated'][$membership['id']] = 1;
     }
   }
 }
